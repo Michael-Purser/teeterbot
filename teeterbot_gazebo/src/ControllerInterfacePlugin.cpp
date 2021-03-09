@@ -25,6 +25,8 @@ ControllerInterfacePlugin::ControllerInterfacePlugin()
   nudge_offset_.y = 0;
   nudge_offset_.z = 0;
 #endif
+
+  last_command_time_ = ros::Time::now();
 }
 
 ControllerInterfacePlugin::~ControllerInterfacePlugin()
@@ -214,6 +216,7 @@ void ControllerInterfacePlugin::recvMotorCmd(const std_msgs::Float64ConstPtr &ms
   } else { // right
     right_cmd_ = msg->data;
   }
+  last_command_time_ = ros::Time::now();
 }
 
 void ControllerInterfacePlugin::data100Cb(const ros::TimerEvent &event)
@@ -272,19 +275,28 @@ void ControllerInterfacePlugin::OnUpdate(const common::UpdateInfo &info)
   double left_feedback;
   double right_feedback;
 
-  if (voltage_mode_) {
-    left_voltage = left_cmd_;
-    right_voltage = right_cmd_;
-  } else {
-    if (torque_mode_) {
-      left_feedback = left_motor_->current_ * left_motor_->props_.torque_constant;
-      right_feedback = right_motor_->current_ * right_motor_->props_.torque_constant;
+  if (ros::Time::now() - last_command_time_ > ros::Duration(0.1))
+  {
+    ROS_WARN_STREAM_THROTTLE(1.0, "Setting voltage to 0 because no command received in the last 0.1 seconds");
+    left_voltage = 0.0;
+    right_voltage = 0.0;
+  }
+  else
+  {
+    if (voltage_mode_) {
+      left_voltage = left_cmd_;
+      right_voltage = right_cmd_;
     } else {
-      left_feedback = left_wheel_joint_->GetVelocity(0);
-      right_feedback = right_wheel_joint_->GetVelocity(0);
+      if (torque_mode_) {
+        left_feedback = left_motor_->current_ * left_motor_->props_.torque_constant;
+        right_feedback = right_motor_->current_ * right_motor_->props_.torque_constant;
+      } else {
+        left_feedback = left_wheel_joint_->GetVelocity(0);
+        right_feedback = right_wheel_joint_->GetVelocity(0);
+      }
+      left_voltage = left_control_->update(0.001, left_cmd_, left_feedback);
+      right_voltage = right_control_->update(0.001, right_cmd_, right_feedback);
     }
-    left_voltage = left_control_->update(0.001, left_cmd_, left_feedback);
-    right_voltage = right_control_->update(0.001, right_cmd_, right_feedback);
   }
 
   // Apply voltage to motors

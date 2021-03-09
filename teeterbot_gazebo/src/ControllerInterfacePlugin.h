@@ -90,6 +90,9 @@ private:
     bool pub_ground_truth_;
     bool auto_reset_orientation_;
     double auto_reset_delay_;
+
+    // Last motor command time
+    ros::Time last_command_time_;
 };
 
 GZ_REGISTER_MODEL_PLUGIN ( ControllerInterfacePlugin )
