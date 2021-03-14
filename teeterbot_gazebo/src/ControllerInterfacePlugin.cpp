@@ -264,7 +264,8 @@ void ControllerInterfacePlugin::OnUpdate(const common::UpdateInfo &info)
   // Reset orientation if enabled and conditions are met
   if (auto_reset_orientation_ && fallen_over_ && (info.simTime.Double() - fallen_over_stamp_) > auto_reset_delay_){
 #if GAZEBO_MAJOR_VERSION >= 9
-    model_->SetWorldPose(ignition::math::Pose3d(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z(), 0.0, 0.0, yaw));
+    // model_->SetWorldPose(ignition::math::Pose3d(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z(), 0.0, 0.0, yaw));
+    model_->SetWorldPose(ignition::math::Pose3d(0, 0, 0.2, 0.0, 0.0, yaw));
 #else
     model_->SetWorldPose(math::Pose(pose.pos, math::Quaternion(0.0, 0.0, yaw)));
 #endif
